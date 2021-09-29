@@ -8,12 +8,20 @@ class MoviesController < ApplicationController
   
     def index
       @movies = Movie.all
-      @data = Movie
       @sort_column = params[:sort_column]
-      
+      @unique_ratings = Movie.distinct('rating').pluck('rating')
+      @selected_ratings = nil
       if params.has_key?('sort_column') and Movie.column_names.include?(params[:sort_column])
-        @movies = @data.all.order("#{params[:sort_column]}")
+        @movies = Movie.all.order("#{params[:sort_column]}")
       end
+      puts "params -- #{params}"
+      if params.has_key?('ratings')
+        @selected_ratings = params[:ratings].keys
+        @movies = Movie.where(rating: @selected_ratings).all
+      else
+        @selected_ratings = @unique_ratings
+      end
+    
         
     end
   
