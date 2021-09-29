@@ -8,6 +8,13 @@ class MoviesController < ApplicationController
   
     def index
       @movies = Movie.all
+      @data = Movie
+      @sort_column = params[:sort_column]
+      
+      if params.has_key?('sort_column') and Movie.column_names.include?(params[:sort_column])
+        @movies = @data.all.order("#{params[:sort_column]}")
+      end
+        
     end
   
     def new
