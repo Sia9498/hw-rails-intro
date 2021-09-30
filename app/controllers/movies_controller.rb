@@ -5,24 +5,56 @@ class MoviesController < ApplicationController
       @movie = Movie.find(id) # look up movie by unique ID
       # will render app/views/movies/show.<extension> by default
     end
+    
+    def saveInSession(key, value)
+      session["#{key}"] = value
+    end
+    
+    def getFromSession(key)
+      if isInSession(key)
+        return session["#{key}"]
+      end
+    end
+    
+    def isInSession(key)
+      return session.has_key?("#{key}")
+    end
   
     def index
+      
       @movies = Movie.all
-      @sort_column = params[:sort_column]
       @unique_ratings = Movie.distinct('rating').pluck('rating')
       @selected_ratings = nil
-      if params.has_key?('sort_column') and Movie.column_names.include?(params[:sort_column])
-        @movies = Movie.all.order("#{params[:sort_column]}")
+      @selection = Movie
+      
+      if !params.has_key?('ratings') and !params.has_key?('sort_column') and (isInSession('sort_column') or isInSession('ratings'))
+        paramsToPass = {}
+        paramsToPass[:ratings] = getFromSession('ratings')
+        paramsToPass[:sort_column] = getFromSession('sort_column')
+        redirect_to movies_path(paramsToPass)
       end
-      puts "params -- #{params}"
+      
       if params.has_key?('ratings')
         @selected_ratings = params[:ratings].keys
-        @movies = Movie.where(rating: @selected_ratings).all
+        @selection = Movie.where(rating: @selected_ratings)
+        saveInSession('ratings', params[:ratings])
+      elsif isInSession('ratings')
+        @selected_ratings = getFromSession('ratings').keys
+        @selection = Movie.where(rating: @selected_ratings)
       else
         @selected_ratings = @unique_ratings
       end
-    
-        
+      
+      if params.has_key?('sort_column') and Movie.column_names.include?(params[:sort_column])
+        @sort_column = params[:sort_column]
+        @movies = @selection.all.order("#{params[:sort_column]}")
+        saveInSession('sort_column', params[:sort_column])
+      elsif isInSession('sort_column')
+        @movies = @selection.all.order("#{getFromSession('sort_column')}")
+        @sort_column = "#{getFromSession('sort_column')}"
+      else
+        @movies = @selection.all
+      end
     end
   
     def new
